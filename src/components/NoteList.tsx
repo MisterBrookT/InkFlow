@@ -4,6 +4,8 @@ interface NoteListProps {
   notes: Note[];
   selectedNoteId: string | null;
   onNoteSelect: (id: string) => void;
+  onSearch: (query: string) => void;
+  searchQuery: string;
 }
 
 function formatDate(timestamp: number): string {
@@ -23,7 +25,7 @@ function formatDate(timestamp: number): string {
   }
 }
 
-export function NoteList({ notes, selectedNoteId, onNoteSelect }: NoteListProps) {
+export function NoteList({ notes, selectedNoteId, onNoteSelect, onSearch, searchQuery }: NoteListProps) {
   return (
     <div className="note-list">
       <div className="note-list-header">
@@ -31,6 +33,8 @@ export function NoteList({ notes, selectedNoteId, onNoteSelect }: NoteListProps)
           type="text"
           placeholder="Search notes..."
           className="search-input"
+          value={searchQuery}
+          onChange={(e) => onSearch(e.target.value)}
         />
       </div>
 
@@ -58,8 +62,8 @@ export function NoteList({ notes, selectedNoteId, onNoteSelect }: NoteListProps)
 
         {notes.length === 0 && (
           <div className="note-list-empty">
-            <p>No notes yet</p>
-            <p className="hint">Click "New Note" to start</p>
+            <p>{searchQuery ? 'No notes found' : 'No notes yet'}</p>
+            <p className="hint">{searchQuery ? 'Try a different search term' : 'Click "New Note" to start'}</p>
           </div>
         )}
       </div>

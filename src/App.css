@@ -364,8 +364,28 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
+.editor-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+  padding: 4px;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+}
+
 .note-title-input {
-  width: 100%;
+  flex: 1;
   font-size: 24px;
   font-weight: 600;
   background: transparent;

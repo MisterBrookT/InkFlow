@@ -1,50 +1,41 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { NoteList } from './components/NoteList';
 import { Editor } from './components/Editor';
 import { Note, Notebook } from './types';
+import { loadNotes, saveNotes, loadNotebooks, saveNotebooks, searchNotes } from './utils/storage';
 import { v4 as uuidv4 } from 'uuid';
 import './App.css';
 
-// Demo data
-const demoNotebooks: Notebook[] = [
-  { id: '1', name: 'Daily Notes', color: '#4caf50' },
-  { id: '2', name: 'Work', color: '#2196f3' },
-  { id: '3', name: 'Learning', color: '#ff9800' },
-];
-
-const demoNotes: Note[] = [
-  {
-    id: '1',
-    title: 'Welcome to InkFlow',
-    content: '# Welcome to InkFlow\n\nA clean and elegant note-taking app.\n\n## Features\n\n- Markdown editing\n- Notebook organization\n- Tag system\n\n> Start capturing your thoughts!',
-    notebookId: '1',
-    tags: ['Getting Started'],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  },
-  {
-    id: '2',
-    title: 'Code Snippet',
-    content: '# Code Snippet\n\n```javascript\nconst greeting = "Hello, InkFlow!";\nconsole.log(greeting);\n```\n\nBeautiful code highlighting!',
-    notebookId: '2',
-    tags: ['Code'],
-    createdAt: Date.now() - 86400000,
-    updatedAt: Date.now() - 86400000,
-  },
-];
-
 function App() {
-  const [notebooks] = useState<Notebook[]>(demoNotebooks);
-  const [notes, setNotes] = useState<Note[]>(demoNotes);
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(demoNotes[0]?.id || null);
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Load data on mount
+  useEffect(() => {
+    const loadedNotes = loadNotes();
+    const loadedNotebooks = loadNotebooks();
+    setNotes(loadedNotes);
+    setNotebooks(loadedNotebooks);
+  }, []);
+
+  // Auto-save notes when they change
+  useEffect(() => {
+    if (notes.length > 0) {
+      saveNotes(notes);
+    }
+  }, [notes]);
 
   const selectedNote = notes.find(n => n.id === selectedNoteId) || null;
 
-  const filteredNotes = selectedNotebookId
-    ? notes.filter(n => n.notebookId === selectedNotebookId)
-    : notes;
+  // Filter notes by notebook and search query
+  const displayedNotes = searchNotes(
+    selectedNotebookId ? notes.filter(n => n.notebookId === selectedNotebookId) : notes,
+    searchQuery
+  );
 
   const handleNoteSelect = useCallback((id: string) => {
     setSelectedNoteId(id);
@@ -85,6 +76,17 @@ function App() {
     setSelectedNoteId(newNote.id);
   }, [selectedNotebookId]);
 
+  const handleDeleteNote = useCallback((id: string) => {
+    setNotes(prev => prev.filter(note => note.id !== id));
+    if (selectedNoteId === id) {
+      setSelectedNoteId(null);
+    }
+  }, [selectedNoteId]);
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
   return (
     <div className="app">
       <Sidebar
@@ -94,14 +96,17 @@ function App() {
         onNewNote={handleCreateNote}
       />
       <NoteList
-        notes={filteredNotes}
+        notes={displayedNotes}
         selectedNoteId={selectedNoteId}
         onNoteSelect={handleNoteSelect}
+        onSearch={handleSearch}
+        searchQuery={searchQuery}
       />
       <Editor
         note={selectedNote}
         onContentChange={handleNoteUpdate}
         onTitleChange={handleTitleUpdate}
+        onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
       />
     </div>
   );

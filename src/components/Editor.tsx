@@ -9,11 +9,12 @@ interface EditorProps {
   note: Note | null;
   onContentChange: (id: string, content: string) => void;
   onTitleChange: (id: string, title: string) => void;
+  onDelete?: () => void;
 }
 
 type ViewMode = 'edit' | 'preview' | 'split';
 
-export function Editor({ note, onContentChange, onTitleChange }: EditorProps) {
+export function Editor({ note, onContentChange, onTitleChange, onDelete }: EditorProps) {
   const titleRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('split');
 
@@ -53,14 +54,21 @@ export function Editor({ note, onContentChange, onTitleChange }: EditorProps) {
   return (
     <div className="editor">
       <div className="editor-header">
-        <input
-          ref={titleRef}
-          type="text"
-          className="note-title-input"
-          defaultValue={note.title}
-          onBlur={handleTitleBlur}
-          placeholder="Title"
-        />
+        <div className="editor-header-row">
+          <input
+            ref={titleRef}
+            type="text"
+            className="note-title-input"
+            defaultValue={note.title}
+            onBlur={handleTitleBlur}
+            placeholder="Title"
+          />
+          {onDelete && (
+            <button className="delete-btn" onClick={onDelete} title="Delete note">
+              🗑️
+            </button>
+          )}
+        </div>
         <div className="note-meta">
           <div className="note-tags-input">
             {note.tags.map((tag, i) => (
