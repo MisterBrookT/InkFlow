@@ -188,13 +188,72 @@ body {
   margin-top: 16px;
 }
 
-.nav-section-title {
+.nav-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 8px 16px;
+}
+
+.nav-section-title {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.nav-section-action {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.nav-section-action:hover {
+  color: var(--text-primary);
+}
+
+.nav-item-name {
+  flex: 1;
+}
+
+.nav-item-actions {
+  display: none;
+  gap: 4px;
+}
+
+.nav-item:hover .nav-item-actions {
+  display: flex;
+}
+
+.nav-item-action {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0.5;
+}
+
+.nav-item-action:hover {
+  opacity: 1;
+}
+
+.nav-item-edit {
+  padding: 4px 16px;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--accent-blue);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 13px;
 }
 
 .tag-dot {
@@ -238,6 +297,7 @@ body {
   color: var(--text-primary);
   font-size: 13px;
   transition: border-color 0.15s;
+  margin-bottom: 8px;
 }
 
 .search-input::placeholder {
@@ -245,6 +305,40 @@ body {
 }
 
 .search-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.note-list-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sort-select {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sort-select:focus {
+  border-color: var(--accent-blue);
+}
+
+.import-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.import-btn:hover {
   border-color: var(--accent-blue);
 }
 
@@ -309,6 +403,48 @@ body {
   color: var(--accent-green);
 }
 
+.note-tag.removable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.note-tag.removable:hover {
+  background: var(--bg-hover);
+}
+
+.tag-remove {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tag-input {
+  width: 80px;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--accent-blue);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-size: 11px;
+}
+
+.add-tag-btn {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: 3px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.add-tag-btn:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
 .note-card-date {
   font-size: 11px;
   color: var(--text-muted);
@@ -326,6 +462,17 @@ body {
 .note-list-empty .hint {
   font-size: 12px;
   margin-top: 8px;
+}
+
+.shortcuts-hint {
+  margin-top: 24px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.shortcuts-hint div {
+  margin: 4px 0;
 }
 
 /* Editor Styles */
@@ -370,7 +517,12 @@ body {
   gap: 12px;
 }
 
-.delete-btn {
+.editor-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-btn {
   background: transparent;
   border: none;
   font-size: 16px;
@@ -380,8 +532,12 @@ body {
   padding: 4px;
 }
 
-.delete-btn:hover {
+.header-btn:hover {
   opacity: 1;
+}
+
+.delete-btn:hover {
+  color: var(--accent-red);
 }
 
 .note-title-input {
@@ -391,7 +547,6 @@ body {
   background: transparent;
   border: none;
   color: var(--text-highlight);
-  margin-bottom: 8px;
 }
 
 .note-title-input::placeholder {

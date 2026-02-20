@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Note } from '../types';
 
 interface NoteListProps {
@@ -6,6 +7,9 @@ interface NoteListProps {
   onNoteSelect: (id: string) => void;
   onSearch: (query: string) => void;
   searchQuery: string;
+  sortBy: 'updated' | 'created' | 'title';
+  onSortChange: (sortBy: 'updated' | 'created' | 'title') => void;
+  onImportNote: (content: string, filename: string) => void;
 }
 
 function formatDate(timestamp: number): string {
@@ -25,7 +29,31 @@ function formatDate(timestamp: number): string {
   }
 }
 
-export function NoteList({ notes, selectedNoteId, onNoteSelect, onSearch, searchQuery }: NoteListProps) {
+export function NoteList({
+  notes,
+  selectedNoteId,
+  onNoteSelect,
+  onSearch,
+  searchQuery,
+  sortBy,
+  onSortChange,
+  onImportNote,
+}: NoteListProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        onImportNote(content, file.name);
+      };
+      reader.readAsText(file);
+    }
+    e.target.value = '';
+  };
+
   return (
     <div className="note-list">
       <div className="note-list-header">
@@ -36,6 +64,31 @@ export function NoteList({ notes, selectedNoteId, onNoteSelect, onSearch, search
           value={searchQuery}
           onChange={(e) => onSearch(e.target.value)}
         />
+        <div className="note-list-toolbar">
+          <select
+            className="sort-select"
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value as 'updated' | 'created' | 'title')}
+          >
+            <option value="updated">Last Updated</option>
+            <option value="created">Created</option>
+            <option value="title">Title</option>
+          </select>
+          <button
+            className="import-btn"
+            onClick={() => fileInputRef.current?.click()}
+            title="Import Markdown"
+          >
+            📥
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.markdown"
+            style={{ display: 'none' }}
+            onChange={handleFileImport}
+          />
+        </div>
       </div>
 
       <div className="note-list-content">
@@ -63,7 +116,7 @@ export function NoteList({ notes, selectedNoteId, onNoteSelect, onSearch, search
         {notes.length === 0 && (
           <div className="note-list-empty">
             <p>{searchQuery ? 'No notes found' : 'No notes yet'}</p>
-            <p className="hint">{searchQuery ? 'Try a different search term' : 'Click "New Note" to start'}</p>
+            <p className="hint">{searchQuery ? 'Try a different search term' : 'Click "New Note" or import a .md file'}</p>
           </div>
         )}
       </div>
