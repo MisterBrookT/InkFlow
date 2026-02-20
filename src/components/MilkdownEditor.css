@@ -1,0 +1,6 @@
+.milkdown-editor {
+  width: 100%;
+  min-height: 100%;
+}
+
+/* Fallback textarea styles are in Editor.css */
