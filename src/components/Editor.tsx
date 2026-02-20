@@ -1,6 +1,9 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { MilkdownEditor } from './MilkdownEditor';
+import { useEffect, useRef, useCallback, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
 import { Note } from '../types';
+import 'highlight.js/styles/github-dark.css';
 
 interface EditorProps {
   note: Note | null;
@@ -8,8 +11,11 @@ interface EditorProps {
   onTitleChange: (id: string, title: string) => void;
 }
 
+type ViewMode = 'edit' | 'preview' | 'split';
+
 export function Editor({ note, onContentChange, onTitleChange }: EditorProps) {
   const titleRef = useRef<HTMLInputElement>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('split');
 
   useEffect(() => {
     if (note && titleRef.current) {
@@ -73,13 +79,47 @@ export function Editor({ note, onContentChange, onTitleChange }: EditorProps) {
         <button className="toolbar-btn" title="Link">🔗</button>
         <button className="toolbar-btn" title="List">•</button>
         <button className="toolbar-btn" title="Quote">"</button>
+        <div className="toolbar-spacer"></div>
+        <button
+          className={`toolbar-btn ${viewMode === 'edit' ? 'active' : ''}`}
+          onClick={() => setViewMode('edit')}
+          title="Edit only"
+        >✏️</button>
+        <button
+          className={`toolbar-btn ${viewMode === 'split' ? 'active' : ''}`}
+          onClick={() => setViewMode('split')}
+          title="Split view"
+        >⬛</button>
+        <button
+          className={`toolbar-btn ${viewMode === 'preview' ? 'active' : ''}`}
+          onClick={() => setViewMode('preview')}
+          title="Preview only"
+        >👁️</button>
       </div>
 
-      <div className="editor-content">
-        <MilkdownEditor
-          content={note.content}
-          onChange={handleContentChange}
-        />
+      <div className={`editor-content-wrapper ${viewMode}`}>
+        {(viewMode === 'edit' || viewMode === 'split') && (
+          <div className="editor-pane">
+            <textarea
+              className="editor-textarea"
+              value={note.content}
+              onChange={(e) => handleContentChange(e.target.value)}
+              placeholder="Start writing...&#10;&#10;Markdown supported:&#10;# Heading&#10;**bold** *italic*&#10;- list&#10;> quote&#10;`code`"
+              spellCheck={false}
+            />
+          </div>
+        )}
+        {(viewMode === 'preview' || viewMode === 'split') && (
+          <div className="preview-pane">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHighlight]}
+              className="markdown-preview"
+            >
+              {note.content || '*Nothing to preview...*'}
+            </ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );
