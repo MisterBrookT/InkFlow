@@ -3,7 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { NoteList } from './components/NoteList';
 import { Editor } from './components/Editor';
 import { Note, Notebook } from './types';
-import { loadNotes, saveNotes, loadNotebooks, saveNotebooks, searchNotes } from './utils/storage';
+import { loadNotes, saveNotes, loadNotebooks, searchNotes } from './utils/storage';
 import { v4 as uuidv4 } from 'uuid';
 import './App.css';
 

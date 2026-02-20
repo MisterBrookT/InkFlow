@@ -119,13 +119,14 @@ export function Editor({ note, onContentChange, onTitleChange, onDelete }: Edito
         )}
         {(viewMode === 'preview' || viewMode === 'split') && (
           <div className="preview-pane">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeHighlight]}
-              className="markdown-preview"
-            >
-              {note.content || '*Nothing to preview...*'}
-            </ReactMarkdown>
+            <div className="markdown-preview">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+              >
+                {note.content || '*Nothing to preview...*'}
+              </ReactMarkdown>
+            </div>
           </div>
         )}
       </div>
