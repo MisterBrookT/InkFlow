@@ -121,6 +121,18 @@ function App() {
     setSelectedNoteId(newNote.id);
   }, [selectedNotebookId]);
 
+  // Global keyboard shortcut for new note
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'n' || e.key === 'N')) {
+        e.preventDefault();
+        handleCreateNote();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleCreateNote]);
+
   const handleDeleteNote = useCallback((id: string) => {
     setNotes(prev => prev.filter(note => note.id !== id));
     if (selectedNoteId === id) {
