@@ -17,33 +17,45 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('updated');
   const [statusFilter, setStatusFilter] = useState<NoteStatus | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Load data on mount
   useEffect(() => {
-    const loadedNotes = loadNotes();
-    const loadedNotebooks = loadNotebooks();
-    setNotes(loadedNotes);
-    setNotebooks(loadedNotebooks);
-
-    const savedSort = localStorage.getItem('inkflow_sort');
-    if (savedSort) {
-      setSortBy(savedSort as SortBy);
+    async function loadData() {
+      try {
+        const [loadedNotes, loadedNotebooks] = await Promise.all([
+          loadNotes(),
+          loadNotebooks()
+        ]);
+        setNotes(loadedNotes);
+        setNotebooks(loadedNotebooks);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
+      }
+      
+      const savedSort = localStorage.getItem('inkflow_sort');
+      if (savedSort) {
+        setSortBy(savedSort as SortBy);
+      }
     }
+    loadData();
   }, []);
 
   // Auto-save notes when they change
   useEffect(() => {
-    if (notes.length > 0) {
+    if (notes.length > 0 && !loading) {
       saveNotes(notes);
     }
-  }, [notes]);
+  }, [notes, loading]);
 
   // Auto-save notebooks when they change
   useEffect(() => {
-    if (notebooks.length > 0) {
+    if (notebooks.length > 0 && !loading) {
       saveNotebooks(notebooks);
     }
-  }, [notebooks]);
+  }, [notebooks, loading]);
 
   useEffect(() => {
     localStorage.setItem('inkflow_sort', sortBy);
@@ -223,6 +235,17 @@ function App() {
     setNotes(prev => [newNote, ...prev]);
     setSelectedNoteId(newNote.id);
   }, [selectedNotebookId]);
+
+  if (loading) {
+    return (
+      <div className="app">
+        <div className="loading-screen">
+          <span className="loading-icon">✒️</span>
+          <p>Loading InkFlow...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app">

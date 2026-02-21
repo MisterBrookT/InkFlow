@@ -1,4 +1,5 @@
 import { Note, Notebook, NoteStatus } from '../types';
+import { invoke } from '@tauri-apps/api/core';
 
 const STORAGE_KEYS = {
   NOTES: 'inkflow_notes',
@@ -29,6 +30,7 @@ A clean and elegant note-taking app.
 - **Note status** - track your work progress
 - **Local storage** - your data stays on your device
 - **Search** across all your notes
+- **Pin notes** to keep important ones at top
 
 ## Getting Started
 
@@ -102,51 +104,84 @@ function hello() {
   },
 ];
 
-// Load notes from localStorage
-export function loadNotes(): Note[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.NOTES);
-    if (stored) {
-      return JSON.parse(stored);
+// Check if running in Tauri
+function isTauri(): boolean {
+  return typeof window !== 'undefined' && '__TAURI__' in window;
+}
+
+// Load notes from storage
+export async function loadNotes(): Promise<Note[]> {
+  if (isTauri()) {
+    try {
+      const notes = await invoke<string>('load_notes');
+      return JSON.parse(notes);
+    } catch {
+      // First run, create default notes
+      await saveNotes(defaultNotes);
+      return defaultNotes;
     }
-  } catch (error) {
-    console.error('Failed to load notes:', error);
-  }
-  // Save default notes on first load
-  saveNotes(defaultNotes);
-  return defaultNotes;
-}
-
-// Save notes to localStorage
-export function saveNotes(notes: Note[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
-  } catch (error) {
-    console.error('Failed to save notes:', error);
-  }
-}
-
-// Load notebooks from localStorage
-export function loadNotebooks(): Notebook[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.NOTEBOOKS);
-    if (stored) {
-      return JSON.parse(stored);
+  } else {
+    // Fallback to localStorage for web
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.NOTES);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Failed to load notes:', error);
     }
-  } catch (error) {
-    console.error('Failed to load notebooks:', error);
+    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(defaultNotes));
+    return defaultNotes;
   }
-  // Save default notebooks on first load
-  saveNotebooks(defaultNotebooks);
-  return defaultNotebooks;
 }
 
-// Save notebooks to localStorage
-export function saveNotebooks(notebooks: Notebook[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.NOTEBOOKS, JSON.stringify(notebooks));
-  } catch (error) {
-    console.error('Failed to save notebooks:', error);
+// Save notes to storage
+export async function saveNotes(notes: Note[]): Promise<void> {
+  if (isTauri()) {
+    await invoke('save_notes', { notesJson: JSON.stringify(notes) });
+  } else {
+    try {
+      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notes));
+    } catch (error) {
+      console.error('Failed to save notes:', error);
+    }
+  }
+}
+
+// Load notebooks from storage
+export async function loadNotebooks(): Promise<Notebook[]> {
+  if (isTauri()) {
+    try {
+      const notebooks = await invoke<string>('load_notebooks');
+      return JSON.parse(notebooks);
+    } catch {
+      await saveNotebooks(defaultNotebooks);
+      return defaultNotebooks;
+    }
+  } else {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.NOTEBOOKS);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Failed to load notebooks:', error);
+    }
+    localStorage.setItem(STORAGE_KEYS.NOTEBOOKS, JSON.stringify(defaultNotebooks));
+    return defaultNotebooks;
+  }
+}
+
+// Save notebooks to storage
+export async function saveNotebooks(notebooks: Notebook[]): Promise<void> {
+  if (isTauri()) {
+    await invoke('save_notebooks', { notebooksJson: JSON.stringify(notebooks) });
+  } else {
+    try {
+      localStorage.setItem(STORAGE_KEYS.NOTEBOOKS, JSON.stringify(notebooks));
+    } catch (error) {
+      console.error('Failed to save notebooks:', error);
+    }
   }
 }
 
@@ -166,12 +201,12 @@ export function searchNotes(notes: Note[], query: string): Note[] {
 }
 
 // MCP API functions for AI integration
-export function mcpListNotes(options?: {
+export async function mcpListNotes(options?: {
   notebookId?: string;
   status?: NoteStatus;
   keyword?: string;
-}): Note[] {
-  let notes = loadNotes();
+}): Promise<Note[]> {
+  let notes = await loadNotes();
   
   if (options?.notebookId) {
     notes = notes.filter(n => n.notebookId === options.notebookId);
@@ -188,18 +223,18 @@ export function mcpListNotes(options?: {
   return notes;
 }
 
-export function mcpGetNote(noteId: string): Note | null {
-  const notes = loadNotes();
+export async function mcpGetNote(noteId: string): Promise<Note | null> {
+  const notes = await loadNotes();
   return notes.find(n => n.id === noteId) || null;
 }
 
-export function mcpCreateNote(options: {
+export async function mcpCreateNote(options: {
   title: string;
   body: string;
   notebookId: string;
   status?: NoteStatus;
-}): Note {
-  const notes = loadNotes();
+}): Promise<Note> {
+  const notes = await loadNotes();
   const newNote: Note = {
     id: `note:${Date.now()}`,
     title: options.title,
@@ -212,16 +247,16 @@ export function mcpCreateNote(options: {
     updatedAt: Date.now(),
   };
   notes.push(newNote);
-  saveNotes(notes);
+  await saveNotes(notes);
   return newNote;
 }
 
-export function mcpUpdateNote(noteId: string, updates: {
+export async function mcpUpdateNote(noteId: string, updates: {
   title?: string;
   body?: string;
   status?: NoteStatus;
-}): Note | null {
-  const notes = loadNotes();
+}): Promise<Note | null> {
+  const notes = await loadNotes();
   const index = notes.findIndex(n => n.id === noteId);
   if (index === -1) return null;
   
@@ -230,20 +265,20 @@ export function mcpUpdateNote(noteId: string, updates: {
   if (updates.status) notes[index].status = updates.status;
   notes[index].updatedAt = Date.now();
   
-  saveNotes(notes);
+  await saveNotes(notes);
   return notes[index];
 }
 
-export function mcpDeleteNote(noteId: string): boolean {
-  const notes = loadNotes();
+export async function mcpDeleteNote(noteId: string): Promise<boolean> {
+  const notes = await loadNotes();
   const index = notes.findIndex(n => n.id === noteId);
   if (index === -1) return false;
   
   notes.splice(index, 1);
-  saveNotes(notes);
+  await saveNotes(notes);
   return true;
 }
 
-export function mcpListNotebooks(): Notebook[] {
+export async function mcpListNotebooks(): Promise<Notebook[]> {
   return loadNotebooks();
 }
