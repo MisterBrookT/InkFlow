@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { NoteList } from './components/NoteList';
 import { Editor } from './components/Editor';
-import { Note, Notebook } from './types';
+import { Note, Notebook, NoteStatus } from './types';
 import { loadNotes, saveNotes, loadNotebooks, saveNotebooks, searchNotes } from './utils/storage';
 import { v4 as uuidv4 } from 'uuid';
 import './App.css';
@@ -16,6 +16,7 @@ function App() {
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('updated');
+  const [statusFilter, setStatusFilter] = useState<NoteStatus | null>(null);
 
   // Load data on mount
   useEffect(() => {
@@ -24,7 +25,6 @@ function App() {
     setNotes(loadedNotes);
     setNotebooks(loadedNotebooks);
 
-    // Load sort preference
     const savedSort = localStorage.getItem('inkflow_sort');
     if (savedSort) {
       setSortBy(savedSort as SortBy);
@@ -45,7 +45,6 @@ function App() {
     }
   }, [notebooks]);
 
-  // Save sort preference
   useEffect(() => {
     localStorage.setItem('inkflow_sort', sortBy);
   }, [sortBy]);
@@ -60,8 +59,17 @@ function App() {
 
     result = searchNotes(result, searchQuery);
 
-    // Sort
+    // Filter by status
+    if (statusFilter) {
+      result = result.filter(n => n.status === statusFilter);
+    }
+
+    // Sort (pinned first, then by sort criteria)
     result = [...result].sort((a, b) => {
+      // Pinned notes first
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+
       if (sortBy === 'updated') {
         return b.updatedAt - a.updatedAt;
       } else if (sortBy === 'created') {
@@ -107,6 +115,22 @@ function App() {
     ));
   }, []);
 
+  const handleStatusUpdate = useCallback((id: string, status: NoteStatus) => {
+    setNotes(prev => prev.map(note =>
+      note.id === id
+        ? { ...note, status, updatedAt: Date.now() }
+        : note
+    ));
+  }, []);
+
+  const handlePinToggle = useCallback((id: string) => {
+    setNotes(prev => prev.map(note =>
+      note.id === id
+        ? { ...note, pinned: !note.pinned, updatedAt: Date.now() }
+        : note
+    ));
+  }, []);
+
   const handleCreateNote = useCallback(() => {
     const newNote: Note = {
       id: uuidv4(),
@@ -114,6 +138,8 @@ function App() {
       content: '',
       notebookId: selectedNotebookId || '1',
       tags: [],
+      status: 'active',
+      pinned: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -121,7 +147,6 @@ function App() {
     setSelectedNoteId(newNote.id);
   }, [selectedNotebookId]);
 
-  // Global keyboard shortcut for new note
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'n' || e.key === 'N')) {
@@ -144,7 +169,6 @@ function App() {
     setSearchQuery(query);
   }, []);
 
-  // Notebook management
   const handleCreateNotebook = useCallback((name: string) => {
     const colors = ['#4caf50', '#2196f3', '#ff9800', '#e91e63', '#9c27b0', '#00bcd4'];
     const newNotebook: Notebook = {
@@ -157,7 +181,6 @@ function App() {
 
   const handleDeleteNotebook = useCallback((id: string) => {
     setNotebooks(prev => prev.filter(nb => nb.id !== id));
-    // Move notes to "Daily Notes" (id: '1')
     setNotes(prev => prev.map(note =>
       note.notebookId === id
         ? { ...note, notebookId: '1' }
@@ -174,7 +197,6 @@ function App() {
     ));
   }, []);
 
-  // Export/Import
   const handleExportNote = useCallback((note: Note) => {
     const blob = new Blob([note.content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
@@ -193,6 +215,8 @@ function App() {
       content,
       notebookId: selectedNotebookId || '1',
       tags: [],
+      status: 'active',
+      pinned: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -210,6 +234,8 @@ function App() {
         onCreateNotebook={handleCreateNotebook}
         onDeleteNotebook={handleDeleteNotebook}
         onRenameNotebook={handleRenameNotebook}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
       />
       <NoteList
         notes={filteredNotes}
@@ -220,12 +246,15 @@ function App() {
         sortBy={sortBy}
         onSortChange={setSortBy}
         onImportNote={handleImportNote}
+        onPinToggle={handlePinToggle}
       />
       <Editor
         note={selectedNote}
         onContentChange={handleNoteUpdate}
         onTitleChange={handleTitleUpdate}
         onTagsChange={handleTagsUpdate}
+        onStatusChange={handleStatusUpdate}
+        onPinToggle={selectedNote ? () => handlePinToggle(selectedNote.id) : undefined}
         onDelete={selectedNote ? () => handleDeleteNote(selectedNote.id) : undefined}
         onExport={selectedNote ? () => handleExportNote(selectedNote) : undefined}
       />

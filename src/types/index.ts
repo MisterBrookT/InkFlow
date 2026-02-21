@@ -1,9 +1,13 @@
+export type NoteStatus = 'none' | 'active' | 'onHold' | 'completed' | 'dropped';
+
 export interface Note {
   id: string;
   title: string;
   content: string;
   notebookId: string;
   tags: string[];
+  status: NoteStatus;
+  pinned: boolean;
   createdAt: number;
   updatedAt: number;
 }

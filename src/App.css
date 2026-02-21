@@ -781,3 +781,73 @@ body {
 .hljs {
   background: var(--bg-tertiary) !important;
 }
+
+/* Status and Pin styles */
+.status-icon {
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+}
+
+.status-select {
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.status-select:focus {
+  border-color: var(--accent-blue);
+}
+
+.note-card.pinned {
+  border-left: 2px solid var(--accent-orange);
+}
+
+.note-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.status-indicator {
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.pin-icon {
+  font-size: 10px;
+  margin-right: 4px;
+}
+
+.pin-btn {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 2px;
+}
+
+.note-card:hover .pin-btn {
+  opacity: 0.5;
+}
+
+.pin-btn:hover {
+  opacity: 1 !important;
+}
+
+.header-btn.active {
+  color: var(--accent-orange);
+}
+
+.note-meta-left {
+  display: flex;
+  align-items: center;
+}

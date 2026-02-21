@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { Note } from '../types';
+import { Note, NoteStatus } from '../types';
 import 'highlight.js/styles/github-dark.css';
 
 interface EditorProps {
@@ -10,13 +10,32 @@ interface EditorProps {
   onContentChange: (id: string, content: string) => void;
   onTitleChange: (id: string, title: string) => void;
   onTagsChange: (id: string, tags: string[]) => void;
+  onStatusChange: (id: string, status: NoteStatus) => void;
+  onPinToggle?: () => void;
   onDelete?: () => void;
   onExport?: () => void;
 }
 
 type ViewMode = 'edit' | 'preview' | 'split';
 
-export function Editor({ note, onContentChange, onTitleChange, onTagsChange, onDelete, onExport }: EditorProps) {
+const STATUS_OPTIONS: { value: NoteStatus; label: string; icon: string }[] = [
+  { value: 'none', label: 'No Status', icon: '○' },
+  { value: 'active', label: 'Active', icon: '●' },
+  { value: 'onHold', label: 'On Hold', icon: '◐' },
+  { value: 'completed', label: 'Completed', icon: '✓' },
+  { value: 'dropped', label: 'Dropped', icon: '✗' },
+];
+
+export function Editor({ 
+  note, 
+  onContentChange, 
+  onTitleChange, 
+  onTagsChange, 
+  onStatusChange,
+  onPinToggle,
+  onDelete, 
+  onExport 
+}: EditorProps) {
   const titleRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [newTag, setNewTag] = useState('');
@@ -67,15 +86,10 @@ export function Editor({ note, onContentChange, onTitleChange, onTagsChange, onD
     }
   }, [note, onTagsChange]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey) {
         switch (e.key) {
-          case 'n':
-          case 'N':
-            // New note - handled by parent
-            break;
           case 'e':
           case 'E':
             if (onExport) {
@@ -132,6 +146,15 @@ export function Editor({ note, onContentChange, onTitleChange, onTagsChange, onD
             placeholder="Title"
           />
           <div className="editor-header-actions">
+            {onPinToggle && (
+              <button 
+                className={`header-btn ${note.pinned ? 'active' : ''}`} 
+                onClick={onPinToggle} 
+                title={note.pinned ? 'Unpin note' : 'Pin note'}
+              >
+                {note.pinned ? '📌' : '📍'}
+              </button>
+            )}
             {onExport && (
               <button className="header-btn" onClick={onExport} title="Export (⌘E)">
                 📤
@@ -145,35 +168,48 @@ export function Editor({ note, onContentChange, onTitleChange, onTagsChange, onD
           </div>
         </div>
         <div className="note-meta">
-          <div className="note-tags-input">
-            {note.tags.map((tag, i) => (
-              <span key={i} className="note-tag removable" onClick={() => handleRemoveTag(tag)}>
-                {tag}
-                <span className="tag-remove">×</span>
-              </span>
-            ))}
-            {showTagInput ? (
-              <input
-                ref={tagInputRef}
-                type="text"
-                className="tag-input"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onBlur={handleAddTag}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddTag();
-                  if (e.key === 'Escape') {
-                    setShowTagInput(false);
-                    setNewTag('');
-                  }
-                }}
-                placeholder="Tag name..."
-              />
-            ) : (
-              <button className="add-tag-btn" onClick={() => setShowTagInput(true)}>
-                + Tag
-              </button>
-            )}
+          <div className="note-meta-left">
+            <select
+              className="status-select"
+              value={note.status || 'none'}
+              onChange={(e) => onStatusChange(note.id, e.target.value as NoteStatus)}
+            >
+              {STATUS_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.icon} {opt.label}
+                </option>
+              ))}
+            </select>
+            <div className="note-tags-input">
+              {note.tags.map((tag, i) => (
+                <span key={i} className="note-tag removable" onClick={() => handleRemoveTag(tag)}>
+                  {tag}
+                  <span className="tag-remove">×</span>
+                </span>
+              ))}
+              {showTagInput ? (
+                <input
+                  ref={tagInputRef}
+                  type="text"
+                  className="tag-input"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onBlur={handleAddTag}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddTag();
+                    if (e.key === 'Escape') {
+                      setShowTagInput(false);
+                      setNewTag('');
+                    }
+                  }}
+                  placeholder="Tag name..."
+                />
+              ) : (
+                <button className="add-tag-btn" onClick={() => setShowTagInput(true)}>
+                  + Tag
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

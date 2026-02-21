@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Note } from '../types';
+import { Note, NoteStatus } from '../types';
 
 interface NoteListProps {
   notes: Note[];
@@ -10,7 +10,16 @@ interface NoteListProps {
   sortBy: 'updated' | 'created' | 'title';
   onSortChange: (sortBy: 'updated' | 'created' | 'title') => void;
   onImportNote: (content: string, filename: string) => void;
+  onPinToggle: (id: string) => void;
 }
+
+const STATUS_ICONS: Record<NoteStatus, { icon: string; color: string }> = {
+  none: { icon: '○', color: '#9d9d9d' },
+  active: { icon: '●', color: '#4caf50' },
+  onHold: { icon: '◐', color: '#ff9800' },
+  completed: { icon: '✓', color: '#2196f3' },
+  dropped: { icon: '✗', color: '#f44336' },
+};
 
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp);
@@ -38,6 +47,7 @@ export function NoteList({
   sortBy,
   onSortChange,
   onImportNote,
+  onPinToggle,
 }: NoteListProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,26 +102,44 @@ export function NoteList({
       </div>
 
       <div className="note-list-content">
-        {notes.map(note => (
-          <div
-            key={note.id}
-            className={`note-card ${selectedNoteId === note.id ? 'selected' : ''}`}
-            onClick={() => onNoteSelect(note.id)}
-          >
-            <div className="note-card-title">{note.title}</div>
-            <div className="note-card-preview">
-              {note.content.replace(/[#*`>\-]/g, '').slice(0, 80)}
-            </div>
-            <div className="note-card-meta">
-              <div className="note-card-tags">
-                {note.tags.slice(0, 2).map((tag, i) => (
-                  <span key={i} className="note-tag">{tag}</span>
-                ))}
+        {notes.map(note => {
+          const statusConfig = STATUS_ICONS[note.status || 'none'];
+          return (
+            <div
+              key={note.id}
+              className={`note-card ${selectedNoteId === note.id ? 'selected' : ''} ${note.pinned ? 'pinned' : ''}`}
+              onClick={() => onNoteSelect(note.id)}
+            >
+              <div className="note-card-header">
+                <span className="status-indicator" style={{ color: statusConfig.color }}>
+                  {statusConfig.icon}
+                </span>
+                <div className="note-card-title">
+                  {note.pinned && <span className="pin-icon">📌</span>}
+                  {note.title}
+                </div>
+                <button
+                  className="pin-btn"
+                  onClick={(e) => { e.stopPropagation(); onPinToggle(note.id); }}
+                  title={note.pinned ? 'Unpin' : 'Pin'}
+                >
+                  {note.pinned ? '📌' : '📍'}
+                </button>
               </div>
-              <span className="note-card-date">{formatDate(note.updatedAt)}</span>
+              <div className="note-card-preview">
+                {note.content.replace(/[#*`>\-]/g, '').slice(0, 80)}
+              </div>
+              <div className="note-card-meta">
+                <div className="note-card-tags">
+                  {note.tags.slice(0, 2).map((tag, i) => (
+                    <span key={i} className="note-tag">{tag}</span>
+                  ))}
+                </div>
+                <span className="note-card-date">{formatDate(note.updatedAt)}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {notes.length === 0 && (
           <div className="note-list-empty">

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Notebook } from '../types';
+import { Notebook, NoteStatus } from '../types';
 
 interface SidebarProps {
   notebooks: Notebook[];
@@ -9,7 +9,17 @@ interface SidebarProps {
   onCreateNotebook: (name: string) => void;
   onDeleteNotebook: (id: string) => void;
   onRenameNotebook: (id: string, name: string) => void;
+  statusFilter: NoteStatus | null;
+  onStatusFilterChange: (status: NoteStatus | null) => void;
 }
+
+const STATUS_CONFIG: { value: NoteStatus; label: string; icon: string; color: string }[] = [
+  { value: 'none', label: 'No Status', icon: '○', color: '#9d9d9d' },
+  { value: 'active', label: 'Active', icon: '●', color: '#4caf50' },
+  { value: 'onHold', label: 'On Hold', icon: '◐', color: '#ff9800' },
+  { value: 'completed', label: 'Completed', icon: '✓', color: '#2196f3' },
+  { value: 'dropped', label: 'Dropped', icon: '✗', color: '#f44336' },
+];
 
 export function Sidebar({
   notebooks,
@@ -19,6 +29,8 @@ export function Sidebar({
   onCreateNotebook,
   onDeleteNotebook,
   onRenameNotebook,
+  statusFilter,
+  onStatusFilterChange,
 }: SidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -66,11 +78,28 @@ export function Sidebar({
 
       <nav className="sidebar-nav">
         <div
-          className={`nav-item ${selectedNotebookId === null ? 'active' : ''}`}
-          onClick={() => onNotebookSelect(null)}
+          className={`nav-item ${selectedNotebookId === null && statusFilter === null ? 'active' : ''}`}
+          onClick={() => { onNotebookSelect(null); onStatusFilterChange(null); }}
         >
           <span className="icon">📒</span>
           <span>All Notes</span>
+        </div>
+
+        <div className="nav-section">
+          <div className="nav-section-title">Status</div>
+          {STATUS_CONFIG.map(status => (
+            <div
+              key={status.value}
+              className={`nav-item ${statusFilter === status.value ? 'active' : ''}`}
+              onClick={() => {
+                onStatusFilterChange(statusFilter === status.value ? null : status.value);
+                onNotebookSelect(null);
+              }}
+            >
+              <span className="status-icon" style={{ color: status.color }}>{status.icon}</span>
+              <span>{status.label}</span>
+            </div>
+          ))}
         </div>
 
         <div className="nav-section">
@@ -110,7 +139,7 @@ export function Sidebar({
             <div
               key={notebook.id}
               className={`nav-item ${selectedNotebookId === notebook.id ? 'active' : ''}`}
-              onClick={() => editingId !== notebook.id && onNotebookSelect(notebook.id)}
+              onClick={() => { if (editingId !== notebook.id) { onNotebookSelect(notebook.id); onStatusFilterChange(null); } }}
             >
               <span className="icon" style={{ color: notebook.color }}>📁</span>
               {editingId === notebook.id ? (
@@ -136,10 +165,7 @@ export function Sidebar({
                   <div className="nav-item-actions">
                     <button
                       className="nav-item-action"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStartEdit(notebook);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); handleStartEdit(notebook); }}
                       title="Rename"
                     >
                       ✏️

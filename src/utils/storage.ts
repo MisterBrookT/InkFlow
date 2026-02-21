@@ -1,4 +1,4 @@
-import { Note, Notebook } from '../types';
+import { Note, Notebook, NoteStatus } from '../types';
 
 const STORAGE_KEYS = {
   NOTES: 'inkflow_notes',
@@ -26,6 +26,7 @@ A clean and elegant note-taking app.
 - **Markdown editing** with live preview
 - **Notebook organization** for your notes
 - **Tag system** for easy categorization
+- **Note status** - track your work progress
 - **Local storage** - your data stays on your device
 - **Search** across all your notes
 
@@ -34,10 +35,13 @@ A clean and elegant note-taking app.
 1. Create a new note by clicking the "New Note" button
 2. Write your content using Markdown
 3. Switch between edit, split, and preview modes using the toolbar
+4. Set status to track progress (Active, On Hold, Completed, Dropped)
 
 > Start capturing your thoughts! ✨`,
     notebookId: '1',
     tags: ['Getting Started'],
+    status: 'completed',
+    pinned: true,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   },
@@ -91,6 +95,8 @@ function hello() {
 | Cell 1   | Cell 2   |`,
     notebookId: '3',
     tags: ['Reference', 'Markdown'],
+    status: 'active',
+    pinned: false,
     createdAt: Date.now() - 86400000,
     updatedAt: Date.now() - 86400000,
   },
@@ -157,4 +163,87 @@ export function searchNotes(notes: Note[], query: string): Note[] {
       note.content.toLowerCase().includes(lowerQuery) ||
       note.tags.some(tag => tag.toLowerCase().includes(lowerQuery))
   );
+}
+
+// MCP API functions for AI integration
+export function mcpListNotes(options?: {
+  notebookId?: string;
+  status?: NoteStatus;
+  keyword?: string;
+}): Note[] {
+  let notes = loadNotes();
+  
+  if (options?.notebookId) {
+    notes = notes.filter(n => n.notebookId === options.notebookId);
+  }
+  
+  if (options?.status) {
+    notes = notes.filter(n => n.status === options.status);
+  }
+  
+  if (options?.keyword) {
+    notes = searchNotes(notes, options.keyword);
+  }
+  
+  return notes;
+}
+
+export function mcpGetNote(noteId: string): Note | null {
+  const notes = loadNotes();
+  return notes.find(n => n.id === noteId) || null;
+}
+
+export function mcpCreateNote(options: {
+  title: string;
+  body: string;
+  notebookId: string;
+  status?: NoteStatus;
+}): Note {
+  const notes = loadNotes();
+  const newNote: Note = {
+    id: `note:${Date.now()}`,
+    title: options.title,
+    content: options.body,
+    notebookId: options.notebookId,
+    tags: [],
+    status: options.status || 'active',
+    pinned: false,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  notes.push(newNote);
+  saveNotes(notes);
+  return newNote;
+}
+
+export function mcpUpdateNote(noteId: string, updates: {
+  title?: string;
+  body?: string;
+  status?: NoteStatus;
+}): Note | null {
+  const notes = loadNotes();
+  const index = notes.findIndex(n => n.id === noteId);
+  if (index === -1) return null;
+  
+  if (updates.title) notes[index].title = updates.title;
+  if (updates.body) notes[index].content = updates.body;
+  if (updates.status) notes[index].status = updates.status;
+  notes[index].updatedAt = Date.now();
+  
+  saveNotes(notes);
+  return notes[index];
+}
+
+export function mcpDeleteNote(noteId: string): boolean {
+  const notes = loadNotes();
+  const index = notes.findIndex(n => n.id === noteId);
+  if (index === -1) return false;
+  
+  notes.splice(index, 1);
+  saveNotes(notes);
+  return true;
+}
+
+export function mcpListNotebooks(): Notebook[] {
+  return loadNotebooks();
 }
