@@ -3,7 +3,7 @@ import { Sidebar } from './components/Sidebar';
 import { NoteList } from './components/NoteList';
 import { Editor } from './components/Editor';
 import { Note, Notebook, NoteStatus } from './types';
-import { loadNotes, saveNotes, loadNotebooks, saveNotebooks, searchNotes } from './utils/storage';
+import { loadNotes, saveNotes, loadNotebooks, saveNotebooks, searchNotes, exportNotesAsMarkdown, gitAddAll, gitCommit, gitPush } from './utils/storage';
 import { v4 as uuidv4 } from 'uuid';
 import './App.css';
 
@@ -18,6 +18,7 @@ function App() {
   const [sortBy, setSortBy] = useState<SortBy>('updated');
   const [statusFilter, setStatusFilter] = useState<NoteStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
   // Load data on mount
   useEffect(() => {
@@ -236,6 +237,29 @@ function App() {
     setSelectedNoteId(newNote.id);
   }, [selectedNotebookId]);
 
+  // GitHub Sync
+  const handleSync = useCallback(async () => {
+    setSyncing(true);
+    try {
+      // 1. Export notes as markdown
+      const notesJson = JSON.stringify(notes);
+      const syncPath = await exportNotesAsMarkdown(notesJson);
+      
+      // 2. Git add, commit, push
+      await gitAddAll(syncPath);
+      const now = new Date().toLocaleString('zh-CN');
+      await gitCommit(syncPath, `Sync notes - ${now}`);
+      await gitPush(syncPath);
+      
+      alert('✅ Synced to GitHub successfully!');
+    } catch (error) {
+      console.error('Sync failed:', error);
+      alert(`❌ Sync failed: ${error}`);
+    } finally {
+      setSyncing(false);
+    }
+  }, [notes]);
+
   if (loading) {
     return (
       <div className="app">
@@ -259,6 +283,8 @@ function App() {
         onRenameNotebook={handleRenameNotebook}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        onSync={handleSync}
+        syncing={syncing}
       />
       <NoteList
         notes={filteredNotes}

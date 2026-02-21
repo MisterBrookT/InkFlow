@@ -282,3 +282,46 @@ export async function mcpDeleteNote(noteId: string): Promise<boolean> {
 export async function mcpListNotebooks(): Promise<Notebook[]> {
   return loadNotebooks();
 }
+
+// GitHub Sync functions
+export async function exportNotesAsMarkdown(notesJson: string): Promise<string> {
+  if (isTauri()) {
+    return await invoke<string>('export_notes_as_markdown', { notesJson });
+  }
+  throw new Error('Export only available in desktop app');
+}
+
+export async function gitStatus(repoPath: string): Promise<string> {
+  if (isTauri()) {
+    return await invoke<string>('git_status', { repoPath });
+  }
+  throw new Error('Git operations only available in desktop app');
+}
+
+export async function gitAddAll(repoPath: string): Promise<string> {
+  if (isTauri()) {
+    return await invoke<string>('git_add_all', { repoPath });
+  }
+  throw new Error('Git operations only available in desktop app');
+}
+
+export async function gitCommit(repoPath: string, message: string): Promise<string> {
+  if (isTauri()) {
+    return await invoke<string>('git_commit', { repoPath, message });
+  }
+  throw new Error('Git operations only available in desktop app');
+}
+
+export async function gitPush(repoPath: string): Promise<string> {
+  if (isTauri()) {
+    return await invoke<string>('git_push', { repoPath });
+  }
+  throw new Error('Git operations only available in desktop app');
+}
+
+export async function gitPull(repoPath: string): Promise<string> {
+  if (isTauri()) {
+    return await invoke<string>('git_pull', { repoPath });
+  }
+  throw new Error('Git operations only available in desktop app');
+}

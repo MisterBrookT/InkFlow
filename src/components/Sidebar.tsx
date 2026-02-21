@@ -11,6 +11,8 @@ interface SidebarProps {
   onRenameNotebook: (id: string, name: string) => void;
   statusFilter: NoteStatus | null;
   onStatusFilterChange: (status: NoteStatus | null) => void;
+  onSync?: () => void;
+  syncing?: boolean;
 }
 
 const STATUS_CONFIG: { value: NoteStatus; label: string; icon: string; color: string }[] = [
@@ -31,6 +33,8 @@ export function Sidebar({
   onRenameNotebook,
   statusFilter,
   onStatusFilterChange,
+  onSync,
+  syncing,
 }: SidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -209,7 +213,16 @@ export function Sidebar({
       </nav>
 
       <div className="sidebar-footer">
-        <span className="status">v1.0.0</span>
+        {onSync && (
+          <button 
+            className="sync-btn" 
+            onClick={onSync}
+            disabled={syncing}
+          >
+            {syncing ? '⏳ Syncing...' : '🔄 Sync to GitHub'}
+          </button>
+        )}
+        <span className="status">v1.1.0</span>
       </div>
     </aside>
   );
